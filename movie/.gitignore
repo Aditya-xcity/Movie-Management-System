@@ -1,0 +1,37 @@
+# ===== Compiled files =====
+*.exe
+*.out
+*.o
+*.obj
+a.out
+
+# ===== Debug files =====
+*.log
+*.tmp
+*.bak
+*.swp
+
+# ===== OS-specific =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== Editor / IDE =====
+.vscode/
+.idea/
+*.code-workspace
+
+# ===== Build folders =====
+build/
+bin/
+dist/
+
+# ===== Runtime data files =====
+movies.txt
+bookings.txt
+
+# ===== Cache =====
+*.cache
+*.pid
+
+

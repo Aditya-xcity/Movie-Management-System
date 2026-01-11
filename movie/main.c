@@ -72,10 +72,11 @@ void customer_view_bookings();
 void admin_view_bookings();
 void admin_view_movie_records();
 void search_booking_by_id();
-void payment_gateway(Booking *booking);
+int payment_gateway(Booking *booking);
 void generate_booking_id(Booking *booking);
 void display_seat_availability(int movie_index);
-bool book_seats(int movie_index, Booking *booking);
+bool book_seats(int movie_index, Booking *booking, bool commit_booking);
+void unbook_seats(int movie_index, Booking *booking);
 
 int main() {
     initialize_seats();
@@ -104,90 +105,96 @@ void generate_booking_id(Booking *booking) {
 void login_panel() {
     int choice;
     char username[20], password[20];
+    
+    while (1) {
+        printf("\n\t=== CINEMA MANAGEMENT SYSTEM ===\n");
+        printf("\n\t1. Admin Login");
+        printf("\n\t2. Customer Menu");
+        printf("\n\t3. Exit");
+        printf("\n\tEnter choice: ");
+        scanf("%d", &choice);
+        
+        // Clear input buffer
+        while (getchar() != '\n');
 
-    printf("\n\t=== CINEMA MANAGEMENT SYSTEM ===\n");
-    printf("\n\t1. Admin Login");
-    printf("\n\t2. Customer Menu");
-    printf("\n\t3. Exit");
-    printf("\n\tEnter choice: ");
-    scanf("%d", &choice);
-
-    switch(choice) {
-        case 1:
-            printf("\n\tUsername: ");
-            scanf("%19s", username);
-            printf("\tPassword: ");
-            scanf("%19s", password);
-            
-            if(strcmp(username, "admin") == 0 && strcmp(password, "admin123") == 0) {
-                admin_panel();
-            } else {
-                printf("\n\tInvalid credentials!");
-                login_panel();
-            }
-            break;
-        case 2:
-            customer_menu();
-            break;
-        case 3:
-            save_movies();
-            save_bookings();
-            printf("Good Bye!");
-            exit(0);
-        default:
-            printf("\n\tInvalid choice!");
-            login_panel();
+        switch(choice) {
+            case 1:
+                printf("\n\tUsername: ");
+                fgets(username, sizeof(username), stdin);
+                username[strcspn(username, "\n")] = '\0';
+                printf("\tPassword: ");
+                fgets(password, sizeof(password), stdin);
+                password[strcspn(password, "\n")] = '\0';
+                
+                if(strcmp(username, "admin") == 0 && strcmp(password, "admin123") == 0) {
+                    admin_panel();
+                } else {
+                    printf("\n\tInvalid credentials!\n");
+                }
+                break;
+            case 2:
+                customer_menu();
+                break;
+            case 3:
+                save_movies();
+                printf("\n\tGood Bye!\n");
+                exit(0);
+            default:
+                printf("\n\tInvalid choice!\n");
+        }
     }
 }
 
 void admin_panel() {
     int choice;
-    printf("\n\t=== ADMIN PANEL ===");
-    printf("\n\t1. Add/Change Movie");
-    printf("\n\t2. Add Coming Soon Movie");
-    printf("\n\t3. View All Bookings");
-    printf("\n\t4. View Movie Records");
-    printf("\n\t5. Search Booking by ID");
-    printf("\n\t6. Back to Main");
-    printf("\n\tEnter choice: ");
-    scanf("%d", &choice);
+    
+    while (1) {
+        printf("\n\t=== ADMIN PANEL ===");
+        printf("\n\t1. Add/Change Movie");
+        printf("\n\t2. Add Coming Soon Movie");
+        printf("\n\t3. View All Bookings");
+        printf("\n\t4. View Movie Records");
+        printf("\n\t5. Search Booking by ID");
+        printf("\n\t6. Back to Main");
+        printf("\n\tEnter choice: ");
+        scanf("%d", &choice);
+        
+        // Clear input buffer
+        while (getchar() != '\n');
 
-    switch(choice) {
-        case 1:
-            add_movie();
-            admin_panel();
-            break;
-        case 2:
-            if(num_coming_soon < MAX_COMING_SOON) {
-                printf("\n\tEnter coming soon movie name: ");
-                scanf("%49s", coming_soon[num_coming_soon].name);
-                printf("\tEnter description: ");
-                scanf("%99s", coming_soon[num_coming_soon].description);
-                coming_soon[num_coming_soon].code = 100 + num_coming_soon;
-                num_coming_soon++;
-            } else {
-                printf("\n\tComing soon list full!");
-            }
-            admin_panel();
-            break;
-        case 3:
-            admin_view_bookings();
-            admin_panel();
-            break;
-        case 4:
-            admin_view_movie_records();
-            admin_panel();
-            break;
-        case 5:
-            search_booking_by_id();
-            admin_panel();
-            break;
-        case 6:
-            login_panel();
-            break;
-        default:
-            printf("\n\tInvalid choice!");
-            admin_panel();
+        switch(choice) {
+            case 1:
+                add_movie();
+                break;
+            case 2:
+                if(num_coming_soon < MAX_COMING_SOON) {
+                    printf("\n\tEnter coming soon movie name: ");
+                    fgets(coming_soon[num_coming_soon].name, sizeof(coming_soon[num_coming_soon].name), stdin);
+                    coming_soon[num_coming_soon].name[strcspn(coming_soon[num_coming_soon].name, "\n")] = '\0';
+                    printf("\tEnter description: ");
+                    fgets(coming_soon[num_coming_soon].description, sizeof(coming_soon[num_coming_soon].description), stdin);
+                    coming_soon[num_coming_soon].description[strcspn(coming_soon[num_coming_soon].description, "\n")] = '\0';
+                    coming_soon[num_coming_soon].code = 100 + num_coming_soon;
+                    num_coming_soon++;
+                    printf("\n\tComing soon movie added successfully!\n");
+                } else {
+                    printf("\n\tComing soon list full!\n");
+                }
+                break;
+            case 3:
+                admin_view_bookings();
+                break;
+            case 4:
+                admin_view_movie_records();
+                break;
+            case 5:
+                search_booking_by_id();
+                break;
+            case 6:
+                return;
+            default:
+                printf("\n\tInvalid choice!\n");
+        }
     }
 }
 
@@ -198,13 +205,13 @@ void add_movie() {
     getchar(); 
 
     if (hall_choice < 1 || hall_choice > 2) {
-        printf("\n\tInvalid hall selection!");
+        printf("\n\tInvalid hall selection!\n");
         return;
     }
 
     int movie_index = hall_choice - 1; 
 
-    
+    // Reset all seats for this hall
     for (int j = 0; j < MAX_PREMIUM_SEATS; j++) {
         movies[movie_index].premium_seats[j] = false;
     }
@@ -281,17 +288,17 @@ void admin_view_bookings() {
 }
 
 void admin_view_movie_records() {
-    printf("\n\t=== MOVIE RECORDS ===");
+    printf("\n\t=== MOVIE RECORDS ===\n");
     for(int i = 0; i < num_movies; i++) {
-        int premium_available = 0;
-        int regular_available = 0;
+        int premium_booked = 0;
+        int regular_booked = 0;
         
         for (int j = 0; j < MAX_PREMIUM_SEATS; j++) {
-            if (!movies[i].premium_seats[j]) premium_available++;
+            if (movies[i].premium_seats[j]) premium_booked++;
         }
         
         for (int j = 0; j < MAX_REGULAR_SEATS; j++) {
-            if (!movies[i].regular_seats[j]) regular_available++;
+            if (movies[i].regular_seats[j]) regular_booked++;
         }
         
         printf("\n\t%d. %s (Hall %d)", movies[i].code, movies[i].name, movies[i].hall_number);
@@ -300,19 +307,19 @@ void admin_view_movie_records() {
         printf("\n\t   Premium Seats (Rs.%d):", movies[i].premium_price);
         printf("\n\t     Total: %d | Booked: %d | Available: %d", 
               MAX_PREMIUM_SEATS, 
-              MAX_PREMIUM_SEATS - premium_available,
-              premium_available);
+              premium_booked,
+              MAX_PREMIUM_SEATS - premium_booked);
         
         printf("\n\t   Regular Seats (Rs.%d):", movies[i].regular_price);
         printf("\n\t     Total: %d | Booked: %d | Available: %d", 
               MAX_REGULAR_SEATS,
-              MAX_REGULAR_SEATS - regular_available,
-              regular_available);
+              regular_booked,
+              MAX_REGULAR_SEATS - regular_booked);
         
         printf("\n\t   Total Tickets: %d | Booked: %d | Available: %d\n",
               MAX_PREMIUM_SEATS + MAX_REGULAR_SEATS,
-              (MAX_PREMIUM_SEATS - premium_available) + (MAX_REGULAR_SEATS - regular_available),
-              premium_available + regular_available);
+              premium_booked + regular_booked,
+              (MAX_PREMIUM_SEATS - premium_booked) + (MAX_REGULAR_SEATS - regular_booked));
     }
 }
 
@@ -357,71 +364,73 @@ void search_booking_by_id() {
 
 void customer_menu() {
     int choice;
-    printf("\n\t=== CUSTOMER MENU ===");
-    printf("\n\t1. Now Showing");
-    printf("\n\t2. Coming Soon");
-    printf("\n\t3. Book Tickets");
-    printf("\n\t4. My Bookings");
-    printf("\n\t5. Back to Main");
-    printf("\n\tEnter choice: ");
-    scanf("%d", &choice);
+    
+    while (1) {
+        printf("\n\t=== CUSTOMER MENU ===");
+        printf("\n\t1. Now Showing");
+        printf("\n\t2. Coming Soon");
+        printf("\n\t3. Book Tickets");
+        printf("\n\t4. My Bookings");
+        printf("\n\t5. Back to Main");
+        printf("\n\tEnter choice: ");
+        scanf("%d", &choice);
+        
+        // Clear input buffer
+        while (getchar() != '\n');
 
-    switch(choice) {
-        case 1:
-            printf("\n\t=== NOW SHOWING ===");
-            for(int i = 0; i < num_movies; i++) {
-                int premium_available = 0;
-                int regular_available = 0;
-                
-                for (int j = 0; j < MAX_PREMIUM_SEATS; j++) {
-                    if (!movies[i].premium_seats[j]) premium_available++;
+        switch(choice) {
+            case 1:
+                printf("\n\t=== NOW SHOWING ===\n");
+                for(int i = 0; i < num_movies; i++) {
+                    int premium_available = 0;
+                    int regular_available = 0;
+                    
+                    for (int j = 0; j < MAX_PREMIUM_SEATS; j++) {
+                        if (!movies[i].premium_seats[j]) premium_available++;
+                    }
+                    
+                    for (int j = 0; j < MAX_REGULAR_SEATS; j++) {
+                        if (!movies[i].regular_seats[j]) regular_available++;
+                    }
+                    
+                    printf("\n\t%d. %s (Hall %d)", i+1, movies[i].name, movies[i].hall_number);
+                    printf("\n\t   Date: %s | Time: %s", movies[i].date, movies[i].time);
+                    printf("\n\t   Premium: Rs.%d (%d available)", 
+                          movies[i].premium_price, premium_available);
+                    printf("\n\t   Regular: Rs.%d (%d available)", 
+                          movies[i].regular_price, regular_available);
                 }
-                
-                for (int j = 0; j < MAX_REGULAR_SEATS; j++) {
-                    if (!movies[i].regular_seats[j]) regular_available++;
+                break;
+            case 2:
+                printf("\n\t=== COMING SOON ===\n");
+                for(int i = 0; i < num_coming_soon; i++) {
+                    printf("\n\t%s - %s", coming_soon[i].name, coming_soon[i].description);
                 }
-                
-                printf("\n\t%d. %s (Hall %d)", i+1, movies[i].name, movies[i].hall_number);
-                printf("\n\t   Date: %s | Time: %s", movies[i].date, movies[i].time);
-                printf("\n\t   Premium: Rs.%d (%d available)", 
-                      movies[i].premium_price, premium_available);
-                printf("\n\t   Regular: Rs.%d (%d available)", 
-                      movies[i].regular_price, regular_available);
-            }
-            customer_menu();
-            break;
-        case 2:
-            printf("\n\t=== COMING SOON ===");
-            for(int i = 0; i < num_coming_soon; i++) {
-                printf("\n\t%s - %s", coming_soon[i].name, coming_soon[i].description);
-            }
-            customer_menu();
-            break;
-        case 3:
-            if(num_movies > 0) {
-                int movie_choice;
-                printf("\n\tSelect movie (1-%d): ", num_movies);
-                scanf("%d", &movie_choice);
-                if(movie_choice > 0 && movie_choice <= num_movies) {
-                    book_ticket(movie_choice-1);
+                break;
+            case 3:
+                if(num_movies > 0) {
+                    int movie_choice;
+                    printf("\n\tSelect movie (1-%d): ", num_movies);
+                    scanf("%d", &movie_choice);
+                    while (getchar() != '\n'); // Clear buffer
+                    
+                    if(movie_choice > 0 && movie_choice <= num_movies) {
+                        book_ticket(movie_choice-1);
+                    } else {
+                        printf("\n\tInvalid selection!\n");
+                    }
                 } else {
-                    printf("\n\tInvalid selection!");
+                    printf("\n\tNo movies available!\n");
                 }
-            } else {
-                printf("\n\tNo movies available!");
-            }
-            customer_menu();
-            break;
-        case 4:
-            customer_view_bookings();
-            customer_menu();
-            break;
-        case 5:
-            login_panel();
-            break;
-        default:
-            printf("\n\tInvalid choice!");
-            customer_menu();
+                break;
+            case 4:
+                customer_view_bookings();
+                break;
+            case 5:
+                return;
+            default:
+                printf("\n\tInvalid choice!\n");
+        }
     }
 }
 
@@ -432,7 +441,7 @@ void customer_view_bookings() {
     printf("\n\tEnter your mobile number: ");
     scanf("%llu", &mobile);
     
-    printf("\n\t=== YOUR BOOKINGS ===");
+    printf("\n\t=== YOUR BOOKINGS ===\n");
     for(int i = 0; i < num_bookings; i++) {
         if(bookings[i].mobile_number == mobile) {
             found = 1;
@@ -464,12 +473,12 @@ void customer_view_bookings() {
     }
     
     if(!found) {
-        printf("\n\tNo bookings found for this number!");
+        printf("\n\tNo bookings found for this number!\n");
     }
 }
 
 void display_seat_availability(int movie_index) {
-    printf("\n\t=== SEAT AVAILABILITY (Hall %d) ===", movies[movie_index].hall_number);
+    printf("\n\t=== SEAT AVAILABILITY (Hall %d) ===\n", movies[movie_index].hall_number);
     printf("\n\tPremium Seats (P1-P%d):\n\t", MAX_PREMIUM_SEATS);
     for (int i = 0; i < MAX_PREMIUM_SEATS; i++) {
         printf("%c%02d ", movies[movie_index].premium_seats[i] ? 'X' : 'P', i+1);
@@ -484,15 +493,20 @@ void display_seat_availability(int movie_index) {
     printf("\n\t(X = Booked, P/R = Available)\n");
 }
 
-bool book_seats(int movie_index, Booking *booking) {
+bool book_seats(int movie_index, Booking *booking, bool commit_booking) {
     int premium_count = 0;
     int regular_count = 0;
     bool temp_premium_seats[MAX_PREMIUM_SEATS] = {false};
     bool temp_regular_seats[MAX_REGULAR_SEATS] = {false};
     
-    
+    // Get premium seats
     printf("\n\tEnter number of premium seats (0-%d): ", MAX_PREMIUM_SEATS);
     scanf("%d", &premium_count);
+    
+    if (premium_count < 0 || premium_count > MAX_PREMIUM_SEATS) {
+        printf("\tInvalid number of premium seats!\n");
+        return false;
+    }
     
     if (premium_count > 0) {
         printf("\tSelect %d premium seat(s) (P1-P%d):\n", premium_count, MAX_PREMIUM_SEATS);
@@ -512,13 +526,18 @@ bool book_seats(int movie_index, Booking *booking) {
             }
             
             temp_premium_seats[seat_num-1] = true;
-            sprintf(booking->premium_seats[i], "P%d", seat_num);
+            snprintf(booking->premium_seats[i], 4, "P%d", seat_num);
         }
     }
     
-    
+    // Get regular seats
     printf("\n\tEnter number of regular seats (0-%d): ", MAX_REGULAR_SEATS);
     scanf("%d", &regular_count);
+    
+    if (regular_count < 0 || regular_count > MAX_REGULAR_SEATS) {
+        printf("\tInvalid number of regular seats!\n");
+        return false;
+    }
     
     if (regular_count > 0) {
         printf("\tSelect %d regular seat(s) (R1-R%d):\n", regular_count, MAX_REGULAR_SEATS);
@@ -538,7 +557,7 @@ bool book_seats(int movie_index, Booking *booking) {
             }
             
             temp_regular_seats[seat_num-1] = true;
-            (booking->regular_seats[i], "R%d", seat_num);
+            snprintf(booking->regular_seats[i], 4, "R%d", seat_num);
         }
     }
     
@@ -547,16 +566,18 @@ bool book_seats(int movie_index, Booking *booking) {
         return false;
     }
     
-    
-    for (int i = 0; i < MAX_PREMIUM_SEATS; i++) {
-        if (temp_premium_seats[i]) {
-            movies[movie_index].premium_seats[i] = true;
+    // Only commit seats if payment is successful
+    if (commit_booking) {
+        for (int i = 0; i < MAX_PREMIUM_SEATS; i++) {
+            if (temp_premium_seats[i]) {
+                movies[movie_index].premium_seats[i] = true;
+            }
         }
-    }
-    
-    for (int i = 0; i < MAX_REGULAR_SEATS; i++) {
-        if (temp_regular_seats[i]) {
-            movies[movie_index].regular_seats[i] = true;
+        
+        for (int i = 0; i < MAX_REGULAR_SEATS; i++) {
+            if (temp_regular_seats[i]) {
+                movies[movie_index].regular_seats[i] = true;
+            }
         }
     }
     
@@ -566,8 +587,30 @@ bool book_seats(int movie_index, Booking *booking) {
     return true;
 }
 
-void book_ticket(int movie_index) {
+void unbook_seats(int movie_index, Booking *booking) {
+    // Unbook premium seats
+    for (int i = 0; i < booking->premium_tickets; i++) {
+        int seat_num;
+        if (sscanf(booking->premium_seats[i], "P%d", &seat_num) == 1) {
+            if (seat_num >= 1 && seat_num <= MAX_PREMIUM_SEATS) {
+                movies[movie_index].premium_seats[seat_num-1] = false;
+            }
+        }
+    }
     
+    // Unbook regular seats
+    for (int i = 0; i < booking->regular_tickets; i++) {
+        int seat_num;
+        if (sscanf(booking->regular_seats[i], "R%d", &seat_num) == 1) {
+            if (seat_num >= 1 && seat_num <= MAX_REGULAR_SEATS) {
+                movies[movie_index].regular_seats[seat_num-1] = false;
+            }
+        }
+    }
+}
+
+void book_ticket(int movie_index) {
+    // Check seat availability
     int premium_available = 0;
     int regular_available = 0;
 
@@ -580,56 +623,69 @@ void book_ticket(int movie_index) {
     }
 
     if (premium_available + regular_available == 0) {
-        printf("\n\tSorry, this show is sold out!");
+        printf("\n\tSorry, this show is sold out!\n");
         return;
     }
 
     Booking new_booking = {0};
-    getchar(); 
+    
+    // Get customer details
     printf("\n\tEnter your name: ");
     fgets(new_booking.customer_name, sizeof(new_booking.customer_name), stdin);
     new_booking.customer_name[strcspn(new_booking.customer_name, "\n")] = '\0'; 
 
     printf("\tEnter mobile number: ");
     scanf("%llu", &new_booking.mobile_number);
-
     
+    // Display available seats
     display_seat_availability(movie_index);
-
     
-    if (!book_seats(movie_index, &new_booking)) {
+    // Book seats temporarily (commit_booking = false)
+    if (!book_seats(movie_index, &new_booking, false)) {
         printf("\n\tBooking failed. Please try again.\n");
         return;
     }
 
-    
+    // Calculate price
     new_booking.total_price = (new_booking.premium_tickets * movies[movie_index].premium_price) +
                               (new_booking.regular_tickets * movies[movie_index].regular_price);
 
-    
+    // Apply discount (5%)
     new_booking.discount = new_booking.total_price * 0.05;
     new_booking.total_price -= new_booking.discount;
 
-    
+    // Add tax (18%)
     new_booking.tax = new_booking.total_price * 0.18;
     new_booking.total_price += new_booking.tax;
 
-    
+    // Set timestamp
     time_t now = time(NULL);
     struct tm *t = localtime(&now);
     strftime(new_booking.purchase_date, 20, "%d-%m-%Y", t);
     strftime(new_booking.purchase_time, 20, "%H:%M:%S", t);
 
-    
+    // Set movie details
     new_booking.movie_code = movies[movie_index].code;
     strcpy(new_booking.movie_name, movies[movie_index].name);
     new_booking.hall_number = movies[movie_index].hall_number;
 
     generate_booking_id(&new_booking);
-    payment_gateway(&new_booking);
+    
+    // Process payment
+    if (payment_gateway(&new_booking)) {
+        // Payment successful - commit the booking
+        book_seats(movie_index, &new_booking, true);
+        bookings[num_bookings++] = new_booking;
+        save_bookings(&new_booking);
+        save_movies();
+        show_bill(&new_booking);
+    } else {
+        // Payment failed/cancelled - seats are already not committed
+        printf("\n\tBooking cancelled. Seats released.\n");
+    }
 }
 
-void payment_gateway(Booking *booking) {
+int payment_gateway(Booking *booking) {
     int choice;
     printf("\n\t=== PAYMENT ===");
     printf("\n\tTotal Amount: Rs.%.2f", booking->total_price);
@@ -638,32 +694,34 @@ void payment_gateway(Booking *booking) {
     printf("\n\t3. Cancel Booking");
     printf("\n\tEnter choice: ");
     scanf("%d", &choice);
+    
+    // Clear input buffer
+    while (getchar() != '\n');
 
     if(choice == 3) {
-        printf("\n\tBooking cancelled!");
-        return;
+        printf("\n\tBooking cancelled!\n");
+        return 0;
     }
 
-    
     if(choice == 1) {
-        long card_number;
+        char card_number[20];
         printf("\tEnter card number: ");
-        scanf("%ld", &card_number);
+        fgets(card_number, sizeof(card_number), stdin);
+        card_number[strcspn(card_number, "\n")] = '\0';
         strcpy(booking->payment_method, "Card");
+        printf("\tPayment successful!\n");
+        return 1;
     } else if(choice == 2) {
-        long mobile_number;
+        char mobile_number[15];
         printf("\tEnter mobile number: ");
-        scanf("%ld", &mobile_number);
+        fgets(mobile_number, sizeof(mobile_number), stdin);
+        mobile_number[strcspn(mobile_number, "\n")] = '\0';
         strcpy(booking->payment_method, "Mobile");
-    }
-
-    
-    if(num_bookings < MAX_BOOKINGS) {
-        bookings[num_bookings] = *booking;
-        num_bookings++;
-        save_bookings();
-        save_movies();
-        show_bill(booking);
+        printf("\tPayment successful!\n");
+        return 1;
+    } else {
+        printf("\tInvalid choice! Booking cancelled.\n");
+        return 0;
     }
 }
 
@@ -703,7 +761,7 @@ void show_bill(Booking *booking) {
 void save_movies() {
     FILE *fp = fopen("movies.txt", "w");
     if(fp == NULL) {
-        printf("\nError saving movies!");
+        printf("\nError saving movies!\n");
         return;
     }
 
@@ -718,12 +776,12 @@ void save_movies() {
                movies[i].time,
                movies[i].hall_number);
         
-        
+        // Save premium seat status
         for (int j = 0; j < MAX_PREMIUM_SEATS; j++) {
             fprintf(fp, ",%d", movies[i].premium_seats[j]);
         }
         
-        
+        // Save regular seat status
         for (int j = 0; j < MAX_REGULAR_SEATS; j++) {
             fprintf(fp, ",%d", movies[i].regular_seats[j]);
         }
@@ -737,30 +795,55 @@ void load_movies() {
     FILE *fp = fopen("movies.txt", "r");
     if(fp == NULL) return;
 
-    while(!feof(fp) && num_movies < MAX_MOVIES) {
+    char line[2000];
+    while(fgets(line, sizeof(line), fp) && num_movies < MAX_MOVIES) {
         Movie m = {0};
-        if(fscanf(fp, "%49[^,],%d,%99[^,],%d,%d,%19[^,],%19[^,],%d",
-               m.name, &m.code, m.description, &m.premium_price,
-               &m.regular_price, m.date, m.time, &m.hall_number) != 8) {
-            continue;
-        }
+        char *token = strtok(line, ",");
+        if (!token) continue;
+        strcpy(m.name, token);
         
+        token = strtok(NULL, ",");
+        if (!token) continue;
+        m.code = atoi(token);
         
+        token = strtok(NULL, ",");
+        if (!token) continue;
+        strcpy(m.description, token);
+        
+        token = strtok(NULL, ",");
+        if (!token) continue;
+        m.premium_price = atoi(token);
+        
+        token = strtok(NULL, ",");
+        if (!token) continue;
+        m.regular_price = atoi(token);
+        
+        token = strtok(NULL, ",");
+        if (!token) continue;
+        strcpy(m.date, token);
+        
+        token = strtok(NULL, ",");
+        if (!token) continue;
+        strcpy(m.time, token);
+        
+        token = strtok(NULL, ",");
+        if (!token) continue;
+        m.hall_number = atoi(token);
+        
+        // Load premium seats
         for (int i = 0; i < MAX_PREMIUM_SEATS; i++) {
-            int seat_status;
-            if (fscanf(fp, ",%d", &seat_status) != 1) {
-                seat_status = 0;
+            token = strtok(NULL, ",");
+            if (token) {
+                m.premium_seats[i] = atoi(token);
             }
-            m.premium_seats[i] = seat_status;
         }
         
-        
+        // Load regular seats
         for (int i = 0; i < MAX_REGULAR_SEATS; i++) {
-            int seat_status;
-            if (fscanf(fp, ",%d", &seat_status) != 1) {
-                seat_status = 0;
+            token = strtok(NULL, ",");
+            if (token) {
+                m.regular_seats[i] = atoi(token);
             }
-            m.regular_seats[i] = seat_status;
         }
         
         movies[num_movies++] = m;
@@ -768,15 +851,13 @@ void load_movies() {
     fclose(fp);
 }
 
-void save_bookings() {
-    FILE *fp = fopen("bookings.txt", "a"); 
+void save_bookings(Booking *booking) {
+    FILE *fp = fopen("bookings.txt", "a");
     if (fp == NULL) {
-        printf("\nError saving bookings!");
+        printf("\nError saving bookings!\n");
         return;
     }
 
-    
-    Booking *booking = &bookings[num_bookings - 1];
     fprintf(fp, "%d,%s,%llu,%d,%s,%d,%d,%d,",
             booking->booking_id,
             booking->customer_name,
@@ -787,7 +868,7 @@ void save_bookings() {
             booking->premium_tickets,
             booking->regular_tickets);
 
-    
+    // Save premium seats
     for (int j = 0; j < booking->premium_tickets; j++) {
         fprintf(fp, "%s", booking->premium_seats[j]);
         if (j < booking->premium_tickets - 1) fprintf(fp, ";");
@@ -795,7 +876,7 @@ void save_bookings() {
 
     fprintf(fp, ",");
 
-    
+    // Save regular seats
     for (int j = 0; j < booking->regular_tickets; j++) {
         fprintf(fp, "%s", booking->regular_seats[j]);
         if (j < booking->regular_tickets - 1) fprintf(fp, ";");
@@ -815,7 +896,6 @@ void save_bookings() {
 void load_bookings() {
     FILE *fp = fopen("bookings.txt", "r");
     if (fp == NULL) {
-        printf("\nNo previous bookings found.\n");
         return;
     }
 
@@ -854,23 +934,27 @@ void load_bookings() {
         if (!token) continue;
         b.regular_tickets = atoi(token);
 
-        
+        // Load premium seats
         token = strtok(NULL, ",");
         if (token && b.premium_tickets > 0) {
-            char *seat_token = strtok(token, ";");
-            for (int i = 0; i < b.premium_tickets && seat_token; i++) {
-                strcpy(b.premium_seats[i], seat_token);
-                seat_token = strtok(NULL, ";");
+            char seat_token[50];
+            strcpy(seat_token, token);
+            char *seat = strtok(seat_token, ";");
+            for (int i = 0; i < b.premium_tickets && seat; i++) {
+                strcpy(b.premium_seats[i], seat);
+                seat = strtok(NULL, ";");
             }
         }
 
-        
+        // Load regular seats
         token = strtok(NULL, ",");
         if (token && b.regular_tickets > 0) {
-            char *seat_token = strtok(token, ";");
-            for (int i = 0; i < b.regular_tickets && seat_token; i++) {
-                strcpy(b.regular_seats[i], seat_token);
-                seat_token = strtok(NULL, ";");
+            char seat_token[50];
+            strcpy(seat_token, token);
+            char *seat = strtok(seat_token, ";");
+            for (int i = 0; i < b.regular_tickets && seat; i++) {
+                strcpy(b.regular_seats[i], seat);
+                seat = strtok(NULL, ";");
             }
         }
 
