@@ -7,7 +7,7 @@ This project follows **safe programming practices**, clean logic, and modular de
 ---
 
 
-## Demo
+## 🖼️ Demo Screenshots
 
 ## 📌 Features
 
@@ -95,14 +95,6 @@ Movie-Management-System/
 ├── README.md
 ├── .gitignore
 │
-├── demo/
-│   ├── admin-login.png
-│   ├── admin-panel.png
-│   ├── add-movie.png
-│   ├── seat-availability.png
-│   ├── seat-selection.png
-│   ├── payment-screen.png
-│   └── booking-bill.png
 │
 └── (runtime files generated automatically)
     ├── movies.txt
@@ -110,28 +102,6 @@ Movie-Management-System/
 ```
 
 ---
-
-## 🖼️ Demo Screenshots
-
-All screenshots are stored inside the **`demo/`** folder.
-
-Example usage inside README:
-
-```md
-![Admin Login](demo/admin-login.png)
-![Seat Selection](demo/seat-selection.png)
-![Booking Bill](demo/booking-bill.png)
-```
-
-**Recommended screenshots:**
-
-* Admin login screen
-* Admin panel menu
-* Add movie screen
-* Seat availability display
-* Seat selection process
-* Payment screen
-* Final booking bill
 
 ---
 
