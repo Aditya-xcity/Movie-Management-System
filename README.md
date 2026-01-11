@@ -9,6 +9,8 @@ This project follows **safe programming practices**, clean logic, and modular de
 
 ## 🖼️ Demo Screenshots
 
+[!Demo](movie/Static/Demo.JPG)
+
 ## 📌 Features
 
 ### 👨‍💼 Admin Panel
